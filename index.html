@@ -525,12 +525,16 @@
             });
             if (vals.length === 0) { STATE.globalUci = 0; updateTierUI(tierId); return; }
 
-            // Proven ceiling = best single result. Secondary results nudge it up a little
-            // (consistency across contests implies your true ceiling sits slightly above your single best),
-            // but never pull it down.
+            // Proven ceiling = best single result. Secondary results add a small, STRICTLY
+            // MONOTONIC nudge upward (consistency across contests implies the true ceiling sits
+            // slightly above the single best), and can never pull it down.
+            // nudge = 0.1 * (sum of all except one instance of the max) / (n - 1)
+            // This is non-decreasing in every input: raising any score can only raise maxUci
+            // and/or `rest`, so a higher score can never yield a lower index.
+            const n = vals.length;
             const maxUci = Math.max(...vals);
-            const others = vals.filter(v => v < maxUci);
-            const nudge = others.length ? 0.1 * (others.reduce((a, b) => a + b, 0) / others.length) : 0;
+            const rest = vals.reduce((a, b) => a + b, 0) - maxUci;
+            const nudge = n > 1 ? 0.1 * (rest / (n - 1)) : 0;
             STATE.globalUci = Math.min(115, maxUci + nudge);
             updateTierUI(tierId);
         }
