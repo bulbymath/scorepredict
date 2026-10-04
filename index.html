@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-page-node-id="WrfRHOizEHuhLCseQARzB4">
+<head data-page-node-id="IMMjrxliXms3llH1IYUknF">
+    <meta charset="UTF-8" data-page-node-id="4PkbFhplvqtS6YAKdtpOsA">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="dzx4eJBEzQdwLxOvUapDvI">
+    <title>ScorePredict UCI Engine</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" data-page-node-id="X3gTISK8mrFsXgvOIhIjvo">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin data-page-node-id="a38U20WvL9qWXFWeIaFrxd">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" data-page-node-id="gTW3gXIb5g6IKbOQy9M5S1">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        base:    '#09090b',
+                        panel:   '#131316',
+                        card:    '#1c1c20',
+                        line:    '#2e2e35',
+                        line2:   '#3a3a44',
+                        brand:   '#3b82f6',
+                        brand2:  '#60a5fa',
+                        cyan:    '#22d3ee',
+                        violet:  '#a78bfa'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #09090b; color: #e4e4e7; }
+
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #2e2e35; border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 14px; width: 14px; border-radius: 50%; background: #3b82f6; cursor: pointer;
+            -webkit-appearance: none; margin-top: -5px; transition: transform .12s ease, background-color .12s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); background: #60a5fa; }
+        input[type=range]::-moz-range-thumb {
+            height: 14px; width: 14px; border: none; border-radius: 50%; background: #3b82f6; cursor: pointer;
+        }
+
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .blur-backdrop { backdrop-filter: blur(10px); }
+
+        .hide { display: none !important; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        .animate-in { animation: fadeIn .35s ease both; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-brand selection:text-white antialiased" data-page-node-id="KARpXPfyV7QoMUCLPvvhp8">
+
+    <!-- Nav -->
+    <nav class="border-b border-line bg-panel/80 sticky top-0 z-30 px-6 py-3.5 blur-backdrop" data-page-node-id="fZYKDvkpp7QKcK0bCOsg4a">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4" data-page-node-id="6TzFMjNe0RBkhJfnUWbD3l">
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchView('home')" data-page-node-id="BYWwDUZWOIfXzYBO3QEDWA">
+                <div class="w-5 h-5 bg-gradient-to-br from-brand to-cyan rounded-md" data-page-node-id="BRduf9gMJMrMuTV0LWLZ90"></div>
+                <h1 class="text-lg font-extrabold font-mono tracking-tight text-white" data-page-node-id="DQlH3SmvPyhTUonOfgjPxn">ScorePredict<span class="text-zinc-500" data-page-node-id="t6nPETkc6zHnnSJe716XV9">_UCI</span></h1>
+            </div>
+            <div class="flex items-center gap-1 bg-base p-1 rounded-lg border border-line" data-page-node-id="eo1YYAA8EzaszRKbRRYY5l">
+                <button onclick="switchView('home')" id="nav-home" class="nav-btn px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors bg-brand text-white shadow-sm" data-page-node-id="tbCFDPsOasAoy5YsxF5EEN">Home</button>
+                <button onclick="switchView('t1')" id="nav-t1"  class="nav-btn px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors text-zinc-400 hover:text-white hover:bg-card" data-page-node-id="eybcmKuPSBnTz3kBa4BgaN">T1 · Foundational</button>
+                <button onclick="switchView('t2')" id="nav-t2"  class="nav-btn px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors text-zinc-400 hover:text-white hover:bg-card" data-page-node-id="c4vV2ANZBrWudszwHtpKQq">T2 · National</button>
+                <button onclick="switchView('t3')" id="nav-t3"  class="nav-btn px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors text-zinc-400 hover:text-white hover:bg-card" data-page-node-id="DeQDEqHVN2uAhzuM8iuS4s">T3 · Olympiad</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8" data-page-node-id="ckZ0XwjHFKUTL1BhKvidvd">
+
+        <!-- HOME -->
+        <div id="view-home" class="space-y-12 animate-in" data-page-node-id="TpIiAENIntyyP5LzBoVHNo">
+            <div class="text-center space-y-4 py-10" data-page-node-id="1Zhr2YH7IcJ7VWBnrtIBDG">
+                <span class="text-[11px] font-mono text-brand bg-brand/10 px-3 py-1 rounded-full border border-brand/20" data-page-node-id="gcXHWNNEC0jAmjR7SW2vkn">Universal Competence Index · 0–115</span>
+                <h2 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight" data-page-node-id="CAsQJIIM2EK75KPsjGIQR3">Universal Competence Index Engine</h2>
+                <p class="text-zinc-400 max-w-2xl mx-auto text-sm leading-relaxed" data-page-node-id="eN2DjabkhZRiPdZ2OqEkxD">
+                    A unified prediction framework mapping math competition performance across one continuous 0–115 scale.
+                    Enter scores in any tier to derive your Global Index, then transfer that index to estimate standing in higher or lower tier contests.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5" data-page-node-id="cZqnXj1jI6OtdSlw0As06A">
+                <div class="bg-panel border border-line rounded-2xl p-6 space-y-4 hover:border-brand/60 hover:-translate-y-0.5 transition cursor-pointer group" onclick="switchView('t1')" data-page-node-id="tdmVDlHQCcKOHwcMT7CqG7">
+                    <div class="text-[11px] font-mono text-brand bg-brand/10 px-2.5 py-1 rounded w-fit" data-page-node-id="zD92Hh0V2TnacWCsbZKa7G">Tier 1</div>
+                    <h3 class="text-lg font-bold text-white" data-page-node-id="X9ujNumuelGAGMW9ZQbHGT">Foundational</h3>
+                    <p class="text-xs text-zinc-400 leading-relaxed" data-page-node-id="Ercw9sGE3aBppN8FN5NuHM">Early high-school and middle-school foundations, up to basic AIME level. <span class="text-amber-400/90" data-page-node-id="nGlUSdvKNAFCcOzG30TKPO">Establishes a floor, not a ceiling.</span></p>
+                    <div class="text-[10px] font-mono text-zinc-500" data-page-node-id="Vooa5CBm2qrsQbjYki5AWH">AMC 8 · AMC 10/12 · AIME · ASMA · IB MYP</div>
+                </div>
+                <div class="bg-panel border border-line rounded-2xl p-6 space-y-4 hover:border-cyan/60 hover:-translate-y-0.5 transition cursor-pointer group" onclick="switchView('t2')" data-page-node-id="gwEDvkEA9JM6moAgDbQSt6">
+                    <div class="text-[11px] font-mono text-cyan bg-cyan/10 px-2.5 py-1 rounded w-fit" data-page-node-id="QNW6sFXGGWsbTda9CBKFvO">Tier 2</div>
+                    <h3 class="text-lg font-bold text-white" data-page-node-id="5Iklfyc2MMn4uS7FRC7Pky">National Standard</h3>
+                    <p class="text-xs text-zinc-400 leading-relaxed" data-page-node-id="VkVwDlAYK2VDGJAdxGpWpq">Mid-to-high tier high-school contests. Robust proof-writing and advanced conceptual mechanics.</p>
+                    <div class="text-[10px] font-mono text-zinc-500" data-page-node-id="62hFzTQimBPMTkrPSPPZdz">Euclid · AIME · AMC 10/12 · HK IMO Prelim · BMO</div>
+                </div>
+                <div class="bg-panel border border-line rounded-2xl p-6 space-y-4 hover:border-violet/60 hover:-translate-y-0.5 transition cursor-pointer group" onclick="switchView('t3')" data-page-node-id="E8UP9J96BsgfF7HlZOBGyQ">
+                    <div class="text-[11px] font-mono text-violet bg-violet/10 px-2.5 py-1 rounded w-fit" data-page-node-id="2YuEaU8OcFG1N1X9sz0xQV">Tier 3</div>
+                    <h3 class="text-lg font-bold text-white" data-page-node-id="CefOnrXCSkra0UvqGAEMpO">International Olympiad</h3>
+                    <p class="text-xs text-zinc-400 leading-relaxed" data-page-node-id="FfJaDLAUhzVYF90eGzBGcG">The summit of secondary mathematics. USAMO/IMO difficulty and intensive team-selection standards.</p>
+                    <div class="text-[10px] font-mono text-zinc-500" data-page-node-id="9KSARXX6P4lBZcPonQ1A7C">AIME · APMO · USA(J)MO · IMO · TSTs</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIER 1 -->
+        <div id="view-t1" class="hide space-y-6" data-page-node-id="chPaUl2AFLnyO6EThf1nHd">
+            <div class="flex flex-col gap-4 bg-panel border border-line rounded-2xl p-5" data-page-node-id="NUSlQc0Wu0qufFOHq7d4DN">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" data-page-node-id="4IvkWcURdKxS3RvhLHlLss">
+                    <div data-page-node-id="pJLHOs4CleHesPYrWAvt43">
+                        <h2 class="text-xl font-bold text-white" data-page-node-id="HlJXixPwbVRJop1zTS5HND">Tier 1 · Foundational</h2>
+                        <p class="text-xs text-zinc-400 mt-1" data-page-node-id="GulbMRJFnwqteGhD09xLnX">Enter known scores to establish your baseline index.</p>
+                    </div>
+                    <div class="flex items-center gap-3 bg-base border border-line p-2 rounded-lg" data-page-node-id="dH1UvlSWANAPZXBmdo4viL">
+                        <div class="text-[10px] font-mono text-amber-400/90 uppercase tracking-wider leading-tight" data-page-node-id="5DVtYwBLHCVzLXljO2c8aH">Floor Index<br data-page-node-id="Y8LRHZLPKDWWJMRKjnQy2I"><span class="text-zinc-500" data-page-node-id="j9bVur2cjuTwnxntUeoQhe">(UCI)</span></div>
+                        <input type="number" id="uci-input-t1" class="w-20 bg-panel border border-line rounded text-white font-mono font-bold text-right px-2 py-1 focus:outline-none focus:border-brand" step="0.1" value="0.0" onchange="forceUci('t1')" data-page-node-id="UQ2vCLBggHgNuB9rlhuOCo">
+                        <button onclick="copyUci('t1')" id="btn-copy-t1" class="px-3 py-1 bg-card hover:bg-line2 text-zinc-300 text-xs font-medium rounded transition" data-page-node-id="NGKPoaipvtGpjCYbJNG7m6">Copy</button>
+                        <button onclick="clearTier('t1')" class="px-3 py-1 bg-card hover:bg-line2 text-zinc-300 text-xs font-medium rounded transition" data-page-node-id="atKqwNxQxAEM18fZipkRS0">Reset</button>
+                    </div>
+                </div>
+                <div class="flex items-start gap-2.5 bg-amber-400/5 border border-amber-400/20 rounded-lg px-3.5 py-2.5" data-page-node-id="v6atE8Xo0TYkW7uyQ2urCV">
+                    <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-page-node-id="ZB6hbQ0OfegNHo1L7igpCR"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" data-page-node-id="BKyqq2yM0qEuNj68RzZSKt"></path></svg>
+                    <p class="text-[11px] text-amber-200/80 leading-relaxed" data-page-node-id="jysHZHQHlKngJURCgFcQdl">T1 is <span class="font-semibold text-amber-200" data-page-node-id="2rUK1SD2UhqugqQL1VMtOO">foundational</span> — the index derived here is a <span class="font-semibold" data-page-node-id="uwZb9J9ZPf7MvgGdFa1DEU">floor, not your ceiling</span>. T1 contests cap low on the UCI scale, so higher-tier results may rate you far above this number. Use it as a baseline, not a verdict.</p>
+                </div>
+            </div>
+            <div id="grid-t1" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-page-node-id="c5UK1kj4jkzdaAGCf5xfRS"></div>
+            <div id="profile-t1" data-page-node-id="0VHjJi3qqEpt7vJE8Y7dwD"></div>
+        </div>
+
+        <!-- TIER 2 -->
+        <div id="view-t2" class="hide space-y-6" data-page-node-id="YZtctQWPillDByzhtahyaf">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-panel border border-line rounded-2xl p-5" data-page-node-id="F0yTYmJEUstoud4KopzJmu">
+                <div data-page-node-id="KhrN74fm6NXReR3YXS9Bjr">
+                    <h2 class="text-xl font-bold text-white" data-page-node-id="7WOa5yVlY5JHYRBEbCMVMF">Tier 2 · National Standard</h2>
+                    <p class="text-xs text-zinc-400 mt-1" data-page-node-id="wAkmcBfTagv0SQhimqGfgk">Mid-to-high tier performance estimations.</p>
+                </div>
+                <div class="flex items-center gap-3 bg-base border border-line p-2 rounded-lg" data-page-node-id="ybP0G9lUWzGQeMLFqRnFln">
+                    <div class="text-[10px] font-mono text-cyan uppercase tracking-wider leading-tight" data-page-node-id="UwPaylY2m3pOEFxt3kgaz9">Global Index<br data-page-node-id="onhkgUvuYo8XFtTI52tlFx"><span class="text-zinc-500" data-page-node-id="gc5FAsQ9Y0TMYlQHZNoBAP">(UCI)</span></div>
+                    <input type="number" id="uci-input-t2" class="w-20 bg-panel border border-line rounded text-white font-mono font-bold text-right px-2 py-1 focus:outline-none focus:border-brand" step="0.1" value="0.0" onchange="forceUci('t2')" data-page-node-id="C8yF4gfYKv1L43xLqGEEj2">
+                    <button onclick="copyUci('t2')" id="btn-copy-t2" class="px-3 py-1 bg-card hover:bg-line2 text-zinc-300 text-xs font-medium rounded transition" data-page-node-id="eziRrlqnJgw8ITzxEYzA8F">Copy</button>
+                    <button onclick="clearTier('t2')" class="px-3 py-1 bg-card hover:bg-line2 text-zinc-300 text-xs font-medium rounded transition" data-page-node-id="IhoZOXU6akJA2iFDTt6tOS">Reset</button>
+                </div>
+            </div>
+            <div id="grid-t2" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-page-node-id="RxGvZ8hUOSQE6M3o1bYfe5"></div>
+            <div id="profile-t2" data-page-node-id="z9XWqAtNsu4Le40nmDy5jL"></div>
+        </div>
+
+        <!-- TIER 3 -->
+        <div id="view-t3" class="hide space-y-6" data-page-node-id="BofGi0N9eWWoNEDlIkOpo9">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-panel border border-line rounded-2xl p-5" data-page-node-id="a6BGiO2SjaSC1Mykm5TT6b">
+                <div data-page-node-id="xAuGa1mOJieAY5JDzGGUX4">
+                    <h2 class="text-xl font-bold text-white" data-page-node-id="BOgIdNuFrgdDaPQHLWiWtd">Tier 3 · International Olympiad</h2>
+                    <p class="text-xs text-zinc-400 mt-1" data-page-node-id="tYbRZVqFHozkOTUARxypiZ">Summit predictions requiring rigorous validation.</p>
+                </div>
+                <div class="flex items-center gap-3 bg-base border border-line p-2 rounded-lg" data-page-node-id="UIVGcmDAurXwjUjvV9rhup">
+                    <div class="text-[10px] font-mono text-violet uppercase tracking-wider leading-tight" data-page-node-id="D2BEXOagjVSEhLmTaYNQpS">Global Index<br data-page-node-id="ZzXSjK3S9gMwg5oNl5Xkee"><span class="text-zinc-500" data-page-node-id="Qx3hDFemsajRMm0do4pp7u">(UCI)</span></div>
+                    <input type="number" id="uci-input-t3" class="w-20 bg-panel border border-line rounded text-white font-mono font-bold text-right px-2 py-1 focus:outline-none focus:border-brand" step="0.1" value="0.0" onchange="forceUci('t3')" data-page-node-id="UPgLLJ50U3QSL8sLkep1xI">
+                    <button onclick="copyUci('t3')" id="btn-copy-t3" class="px-3 py-1 bg-card hover:bg-line2 text-zinc-300 text-xs font-medium rounded transition" data-page-node-id="6FeMohzgPnVYBojdxJNOwR">Copy</button>
+                    <button onclick="clearTier('t3')" class="px-3 py-1 bg-card hover:bg-line2 text-zinc-300 text-xs font-medium rounded transition" data-page-node-id="lSpxGCCcEL87zpX0hxaDi4">Reset</button>
+                </div>
+            </div>
+            <div id="grid-t3" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-page-node-id="mVg1NQ53VCpQgmMCeIjqZn"></div>
+            <div id="profile-t3" data-page-node-id="Fd2pw6VRDvybXwabWk4uJW"></div>
+        </div>
+    </main>
+
+    <footer class="border-t border-line py-4 text-center text-xs text-zinc-600 font-mono" data-page-node-id="dacxot7G30wZ7gLBM4Kb3n">
+        ScorePredict_UCI · Unified Multi-Tier Score Engine
+    </footer>
+
+    <!-- Spectrum Modal -->
+    <div id="modal-spectrum" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 blur-backdrop opacity-0 pointer-events-none transition-opacity duration-200" data-page-node-id="bRUZGJss4dVy7OjWLTd8c6">
+        <div id="modal-container" class="bg-panel border border-line rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl transform scale-95 transition-transform duration-200 max-h-[90vh] overflow-y-auto" data-page-node-id="Gt8kP9OK5qKHEHf4AO6c6P">
+            <div class="flex items-start justify-between border-b border-line pb-4" data-page-node-id="cgwOcCU9A4dRQDWa2NYof2">
+                <div data-page-node-id="UVn9nGIcjEfSKs9NOq1Elc">
+                    <div class="flex items-center gap-2" data-page-node-id="YsYtM1LPHNrFmZc1igZHDi">
+                        <h3 id="modal-title" class="text-lg font-bold text-white font-mono" data-page-node-id="VAy3k1ZXfkMCJVPmbGGZcK">Spectrum Analysis</h3>
+                        <span id="modal-status" class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand/20 text-brand border border-brand/40" data-page-node-id="jCkN3xSh8h7jkoinr2OWjr">Verified</span>
+                    </div>
+                    <p id="modal-subtitle" class="text-xs text-zinc-400 mt-1" data-page-node-id="oYROf0RcqTMB7qNBHuReE3">Performance breakdown and distribution benchmarking.</p>
+                </div>
+                <button onclick="closeModal()" class="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-card transition" data-page-node-id="b1M8VfYE7qCCXf1tWY5ANE">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-page-node-id="Yy7GosA9jA0OlNAtQpFKRj"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" data-page-node-id="nG5BKbhUHrg1aQoOJami9x"></path></svg>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-base border border-line p-4 rounded-xl" data-page-node-id="CWcXQT4Be8Mn5GclH65ENS">
+                <div data-page-node-id="gBt75o22366YAOilYHLcew"><div class="text-[10px] font-mono text-zinc-500 uppercase" data-page-node-id="i4GPtGBq5q5Z2w2KqTG2yk">Score / Range</div><div id="modal-score" class="text-2xl font-extrabold font-mono text-white mt-1" data-page-node-id="0G9drjadqZQRFGeENgu2q0">--</div></div>
+                <div data-page-node-id="Cy9ESfdnlZXBAgaKbOVnPv"><div class="text-[10px] font-mono text-zinc-500 uppercase" data-page-node-id="ZcH1qBh8h8ogn4973ZwOe3">Award</div><div id="modal-award" class="text-xs font-semibold text-cyan mt-2" data-page-node-id="VGXAHpkJT2TtPWyroQpymP">--</div></div>
+                <div data-page-node-id="nfNGhBmpadQ7nYB1csKaqJ"><div class="text-[10px] font-mono text-zinc-500 uppercase" data-page-node-id="PBo2HrDsvKqLUmgIvVZvpf">Percentile</div><div id="modal-pct" class="text-lg font-bold font-mono text-emerald-400 mt-1" data-page-node-id="ysECo5xA0UCSAzsaSex3KX">--</div></div>
+            </div>
+
+            <div class="space-y-2" data-page-node-id="Y8YkrUVRgAkJ8HWng2TcCZ">
+                <div class="flex justify-between text-xs font-mono text-zinc-400" data-page-node-id="9liElhh0E3Saf3pI7US0rJ"><span data-page-node-id="cb9DvePHzo0qaK2UKTAZd1">Spectrum Position</span><span id="spect-bounds" data-page-node-id="C0L6KYIuZi9G20gMBxVEbs">0 - Max</span></div>
+                <div class="relative w-full h-8 bg-base border border-line rounded-lg overflow-hidden flex items-center" data-page-node-id="g8NMtt2DkBXpli5UU3DY1e">
+                    <div class="absolute inset-0 bg-gradient-to-r from-zinc-800 via-brand/20 to-violet/30 opacity-70" data-page-node-id="jk1gs8Y6BeAj525k1AGQTE"></div>
+                    <div id="spect-marker" class="absolute top-0 bottom-0 w-1 bg-cyan shadow-[0_0_12px_#22d3ee] transition-all duration-300 z-10" style="left:0%" data-page-node-id="K5r1DSrmk9CMlIG5KXlMwa">
+                        <div class="absolute -top-1 -translate-x-1/2 w-3 h-3 bg-cyan rotate-45 rounded-sm" data-page-node-id="KFaZK53kr8fGRvREEoiRLM"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-[10px] font-mono text-zinc-500 pt-1" data-page-node-id="ib0l9QusHJ9jT2BXB1mRZ1"><span data-page-node-id="avtLBGwbI4IdeeZxsToZuZ">0</span><span id="spect-mid" data-page-node-id="avrgPjlF5mOJvdOR6pwzA3">mid</span><span id="spect-max" data-page-node-id="lP7B31JCu3EMBtzo6VEJqT">Max</span></div>
+            </div>
+
+            <div class="space-y-2" data-page-node-id="RRgHqUa8tjzIekSlXUijLi">
+                <h4 class="text-xs font-semibold text-zinc-300" data-page-node-id="gykK5FHHOAA6vWJGijSe0t">Benchmark Distribution</h4>
+                <div class="bg-base border border-line p-4 rounded-lg h-56 relative" data-page-node-id="zN9SUaLkc6NWD0Ga0pAkeX"><canvas id="chart-spectrum" data-page-node-id="ob1NGCfC9owv95AkdcNBS7"></canvas></div>
+            </div>
+
+            <div class="space-y-2" data-page-node-id="GlGG2YZgpDF90IukT0Ow33">
+                <h4 class="text-xs font-semibold text-zinc-300" data-page-node-id="hLM0v5OeNOLZDGy0VBB91s">Cross-Contest Implications</h4>
+                <div id="spect-projections" class="bg-base border border-line p-3.5 rounded-xl text-xs text-zinc-300 leading-relaxed" data-page-node-id="hjEeukZKHj5knBXxfm3vuY">--</div>
+            </div>
+
+            <div class="text-right pt-2 border-t border-line" data-page-node-id="a1GnlYxS8d2L67CuaoAEgM">
+                <button onclick="closeModal()" class="px-4 py-1.5 bg-card hover:bg-line2 text-zinc-300 text-xs font-semibold rounded transition" data-page-node-id="GGdwEwHJ5xrvQS6368OI0p">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <textarea id="clipboard-fallback" class="absolute -left-[9999px]"></textarea>
+
+    <script>
+        /** State */
+        const STATE = {
+            view: 'home',
+            globalUci: 0,
+            forced: false,
+            inputs: { t1: {}, t2: {}, t3: {} }
+        };
+
+        /** [Score, UCI] piecewise maps */
+        const MAPS = {
+            amc8:    [[0, 0], [15, 5], [18, 10], [22, 15], [25, 20]],
+            amc1012: [[0, 0], [60, 5], [90, 20], [105, 27], [120, 35], [150, 60]],
+            aime:    [[0, 0], [3, 20], [5, 34], [8, 50], [10, 60], [12, 70], [15, 82]],
+            asma:    [[0, 0], [4, 5], [6, 12], [7, 20]],
+            myp:     [[1, 0], [4, 3], [6, 10], [7, 15]],
+            euclid:  [[0, 10], [60, 25], [85, 40], [100, 60]],
+            hkimo:   [[0, 0], [5, 34], [8, 45], [10.5, 54], [13.5, 66], [17, 82], [25, 102]],
+            bmo:     [[0, 15], [30, 35], [60, 65]],
+            apmo:    [[0, 40], [15, 60], [25, 75], [35, 90]],
+            usamo:   [[0, 45], [14, 60], [28, 80], [42, 100]],
+            imo:     [[0, 60], [15, 75], [22, 85], [29, 100], [42, 115]],
+            tst:     [[0, 50], [21, 75], [42, 105]]
+        };
+
+        const TEST_DEFS = {
+            t1: [
+                { id: 'amc8', name: 'AMC 8', max: 25, mapKey: 'amc8', bMarks: [10, 18, 22, 25], bLabels: ['Avg', 'HR', 'DHR', 'Perfect'] },
+                { id: 'amc10', name: 'AMC 10/12', max: 150, mapKey: 'amc1012', bMarks: [60, 90, 105, 120, 150], bLabels: ['Avg', 'AIME', 'HR', 'DHR', 'Perfect'] },
+                { id: 'aime', name: 'AIME', max: 15, mapKey: 'aime', bMarks: [2, 5, 8, 10, 15], bLabels: ['Avg', 'Solid', 'USAMO', 'MOP', 'Perfect'], reqUci: 20 },
+                { id: 'asma', name: 'ASMA', max: 7, mapKey: 'asma', bMarks: [4, 6, 7], bLabels: ['Avg', 'High', 'Perfect'] },
+                { id: 'myp', name: 'IB MYP', max: 7, mapKey: 'myp', bMarks: [4, 6, 7], bLabels: ['Standard', 'High', 'Perfect'] }
+            ],
+            t2: [
+                { id: 'euclid', name: 'Euclid', max: 100, mapKey: 'euclid', bMarks: [50, 60, 85, 100], bLabels: ['Avg', 'Distinction', 'HR', 'Perfect'] },
+                { id: 'aime', name: 'AIME', max: 15, mapKey: 'aime', bMarks: [2, 5, 8, 10, 15], bLabels: ['Avg', 'Solid', 'USAMO', 'MOP', 'Perfect'], reqUci: 20 },
+                { id: 'amc10', name: 'AMC 10/12', max: 150, mapKey: 'amc1012', bMarks: [60, 90, 105, 120, 150], bLabels: ['Avg', 'AIME', 'HR', 'DHR', 'Perfect'] },
+                { id: 'hkimo', name: 'HK IMO Prelim', max: 30, mapKey: 'hkimo', bMarks: [8, 10.5, 13.5, 17], bLabels: ['Qual', 'Bronze', 'Silver', 'Gold'] },
+                { id: 'bmo', name: 'BMO Round 1', max: 60, mapKey: 'bmo', bMarks: [15, 30, 45, 60], bLabels: ['Avg', 'Distinction', 'Medal', 'Perfect'] }
+            ],
+            t3: [
+                { id: 'aime', name: 'AIME', max: 15, mapKey: 'aime', bMarks: [2, 5, 8, 10, 15], bLabels: ['Avg', 'Solid', 'USAMO', 'MOP', 'Perfect'], reqUci: 20 },
+                { id: 'apmo', name: 'APMO', max: 35, mapKey: 'apmo', bMarks: [10, 15, 25, 35], bLabels: ['Avg', 'Bronze', 'Gold', 'Perfect'] },
+                { id: 'usamo', name: 'USA(J)MO', max: 42, mapKey: 'usamo', bMarks: [14, 21, 28, 42], bLabels: ['Bronze', 'Silver', 'MOP', 'Perfect'] },
+                { id: 'imo', name: 'IMO', max: 42, mapKey: 'imo', bMarks: [15, 22, 29, 42], bLabels: ['Bronze', 'Silver', 'Gold', 'Perfect'] },
+                { id: 'tst', name: 'TSTs', max: 42, mapKey: 'tst', bMarks: [14, 21, 30, 42], bLabels: ['Avg', 'Strong', 'Team', 'Perfect'] }
+            ]
+        };
+
+        /** Badge definitions: mapKey -> ordered threshold levels */
+        const BADGE_DEFS = {
+            amc8: { levels: [
+                { min: 25, text: "Perfect Score (25/25)", cls: "purple", pct: "99.9th" },
+                { min: 22, text: "Distinguished Honor Roll (Top 1%)", cls: "indigo", pct: "99th" },
+                { min: 18, text: "Honor Roll (Top 5%)", cls: "cyan", pct: "95th" },
+                { min: 14, text: "Proficient Competitor", cls: "blue", pct: "75th" },
+                { min: 0,  text: "Foundational Participant", cls: "slate", pct: "50th" }
+            ]},
+            amc1012: { levels: [
+                { min: 120, text: "Distinguished Honor Roll (Top 1%)", cls: "purple", pct: "99th" },
+                { min: 105, text: "Honor Roll (Top 5%)", cls: "indigo", pct: "95th" },
+                { min: 90,  text: "AIME Qualifier", cls: "cyan", pct: "88th" },
+                { min: 60,  text: "Proficient Competitor", cls: "blue", pct: "60th" },
+                { min: 0,   text: "Novice Competitor", cls: "slate", pct: "<50th" }
+            ]},
+            aime: { levels: [
+                { min: 10, text: "Olympiad / MOP Tier", cls: "purple", pct: "99.8th" },
+                { min: 7,  text: "USAMO Candidate", cls: "indigo", pct: "97th" },
+                { min: 4,  text: "Solid Competitor", cls: "cyan", pct: "85th" },
+                { min: 0,  text: "AIME Participant", cls: "slate", pct: "70th" }
+            ]},
+            asma: { levels: [
+                { min: 7, text: "Perfect Round (7/7)", cls: "indigo", pct: "98th" },
+                { min: 6, text: "Honor Achievement", cls: "cyan", pct: "88th" },
+                { min: 4, text: "Proficient", cls: "blue", pct: "65th" },
+                { min: 0, text: "Developing", cls: "slate", pct: "<50th" }
+            ]},
+            myp: { levels: [
+                { min: 7, text: "Top Grade (Extended)", cls: "indigo", pct: "95th" },
+                { min: 6, text: "High Achievement", cls: "cyan", pct: "80th" },
+                { min: 4, text: "Standard Performance", cls: "blue", pct: "50th" },
+                { min: 0, text: "Developing", cls: "slate", pct: "<30th" }
+            ]},
+            euclid: { levels: [
+                { min: 85, text: "Top Distinction", cls: "indigo", pct: "95th" },
+                { min: 60, text: "Distinction", cls: "cyan", pct: "75th" },
+                { min: 40, text: "Proficient", cls: "blue", pct: "55th" },
+                { min: 0,  text: "Developing", cls: "slate", pct: "<40th" }
+            ]},
+            hkimo: { levels: [
+                { min: 17,   text: "Gold Medal", cls: "purple", pct: "96th" },
+                { min: 13.5, text: "Silver Medal", cls: "indigo", pct: "88th" },
+                { min: 10.5, text: "Bronze Medal", cls: "cyan", pct: "75th" },
+                { min: 8,    text: "Qualifier", cls: "blue", pct: "60th" },
+                { min: 0,    text: "Participant", cls: "slate", pct: "<50th" }
+            ]},
+            bmo: { levels: [
+                { min: 45, text: "Medal", cls: "purple", pct: "90th" },
+                { min: 30, text: "Distinction", cls: "indigo", pct: "70th" },
+                { min: 15, text: "Merit", cls: "blue", pct: "50th" },
+                { min: 0,  text: "Participant", cls: "slate", pct: "<40th" }
+            ]},
+            apmo: { levels: [
+                { min: 25, text: "Gold Medal", cls: "purple", pct: "95th" },
+                { min: 15, text: "Bronze Medal", cls: "indigo", pct: "75th" },
+                { min: 10, text: "Honorable Mention", cls: "cyan", pct: "55th" },
+                { min: 0,  text: "Participant", cls: "slate", pct: "<40th" }
+            ]},
+            usamo: { levels: [
+                { min: 28, text: "MOP / Winner Tier", cls: "purple", pct: "97th" },
+                { min: 21, text: "Silver Medal", cls: "indigo", pct: "90th" },
+                { min: 14, text: "Bronze Medal", cls: "cyan", pct: "75th" },
+                { min: 0,  text: "Participant", cls: "slate", pct: "<50th" }
+            ]},
+            imo: { levels: [
+                { min: 29, text: "Gold Medal", cls: "purple", pct: "97th" },
+                { min: 22, text: "Silver Medal", cls: "indigo", pct: "88th" },
+                { min: 15, text: "Bronze Medal", cls: "cyan", pct: "75th" },
+                { min: 0,  text: "Participant", cls: "slate", pct: "<50th" }
+            ]},
+            tst: { levels: [
+                { min: 30, text: "Team Selection", cls: "indigo", pct: "90th" },
+                { min: 21, text: "Strong Candidate", cls: "cyan", pct: "70th" },
+                { min: 14, text: "National Pool", cls: "blue", pct: "50th" },
+                { min: 0,  text: "Developing", cls: "slate", pct: "<40th" }
+            ]}
+        };
+
+        const BADGE_CLASS = {
+            purple: "bg-purple-500/10 text-purple-300 border-purple-500/30",
+            indigo: "bg-blue-500/10 text-blue-300 border-blue-500/30",
+            cyan:   "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
+            blue:   "bg-sky-500/10 text-sky-300 border-sky-500/30",
+            slate:  "bg-zinc-800 text-zinc-400 border-zinc-700"
+        };
+
+        let chartInstance = null;
+
+        function lerp(x, x0, y0, x1, y1) { return x0 === x1 ? y0 : y0 + ((y1 - y0) * ((x - x0) / (x1 - x0))); }
+
+        function piecewise(val, points, mapForward) {
+            if (mapForward) {
+                if (val <= points[0][0]) return points[0][1];
+                for (let i = 0; i < points.length - 1; i++) {
+                    if (val >= points[i][0] && val <= points[i + 1][0]) return lerp(val, points[i][0], points[i][1], points[i + 1][0], points[i + 1][1]);
+                }
+                return points[points.length - 1][1];
+            } else {
+                if (val <= points[0][1]) return points[0][0];
+                for (let i = 0; i < points.length - 1; i++) {
+                    if (val >= points[i][1] && val <= points[i + 1][1]) return lerp(val, points[i][1], points[i][0], points[i + 1][1], points[i + 1][0]);
+                }
+                return points[points.length - 1][0];
+            }
+        }
+        const scoreToUci = (k, s) => piecewise(s, MAPS[k], true);
+        function uciToScore(k, u) {
+            const pts = MAPS[k];
+            const r = piecewise(u, pts, false);
+            const lo = pts[0][0], hi = pts[pts.length - 1][0];
+            return Math.min(hi, Math.max(lo, r));
+        }
+
+        function formatRange(score, maxScale, isInt = true) {
+            const margin = maxScale * 0.05;
+            let low = Math.max(0, Math.min(score - margin, maxScale));
+            let high = Math.max(0, Math.min(score + margin, maxScale));
+            if (isInt) { low = Math.floor(low); high = Math.ceil(high); }
+            else { low = parseFloat(low.toFixed(1)); high = parseFloat(high.toFixed(1)); }
+            return low === high ? `${low}` : `${low} – ${high}`;
+        }
+
+        function getRank(uci) {
+            if (uci >= 100) return "Global Summit (IMO Gold)";
+            if (uci >= 80)  return "National Representative (MOP/IMO Bronze)";
+            if (uci >= 60)  return "Elite Competitor (USAMO Tier)";
+            if (uci >= 40)  return "Advanced Competitor (AIME High)";
+            if (uci >= 20)  return "Standard Qualifier (AIME Floor)";
+            if (uci >= 10)  return "Developing (Honor Roll)";
+            return "Foundational";
+        }
+
+        function getTestBadge(mapKey, score, locked = false) {
+            if (locked) return { text: "Threshold not met", cls: "slate", pct: "N/A" };
+            const def = BADGE_DEFS[mapKey];
+            if (!def) return { text: "--", cls: "slate", pct: "--" };
+            let s = typeof score === 'number' ? score : parseFloat(score);
+            if (isNaN(s)) s = 0;
+            for (const lvl of def.levels) if (s >= lvl.min) return { text: lvl.text, cls: lvl.cls, pct: lvl.pct };
+            return { text: "--", cls: "slate", pct: "--" };
+        }
+
+        /** Profile panel HTML */
+        function profileHtml(tierId) {
+            const label = tierId === 't1' ? 'Floor UCI' : 'Global UCI';
+            return `
+            <section class="bg-panel border border-line rounded-2xl p-5 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Profile Standing</h3>
+                        <div id="profile-rank-${tierId}" class="text-base font-bold text-white mt-1">Awaiting input</div>
+                        <div id="profile-note-${tierId}" class="text-[11px] text-amber-200/70 mt-1"></div>
+                    </div>
+                    <div class="text-left sm:text-right">
+                        <span id="profile-index-${tierId}" class="text-2xl font-extrabold font-mono text-brand">--</span>
+                        <span class="text-xs text-zinc-500 block" id="profile-label-${tierId}">${label}</span>
+                    </div>
+                </div>
+                <div class="w-full bg-base rounded-full h-2 overflow-hidden border border-line">
+                    <div id="profile-bar-${tierId}" class="h-full rounded-full transition-all duration-300" style="width:0%; background:linear-gradient(90deg,#3b82f6,#22d3ee)"></div>
+                </div>
+            </section>`;
+        }
+
+        function buildCardHtml(tierId, def) {
+            return `
+            <div class="bg-panel border border-line rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-brand/50 transition cursor-pointer group" onclick="openModal('${tierId}', '${def.id}')">
+                <div class="space-y-3 relative pointer-events-none">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold text-zinc-200 group-hover:text-white transition">${def.name}</span>
+                        <span id="tag-${tierId}-${def.id}" class="text-[10px] font-mono px-2 py-0.5 rounded bg-line2 text-zinc-400 border border-line">Pending</span>
+                    </div>
+                    <div>
+                        <div id="score-${tierId}-${def.id}" class="text-3xl font-extrabold font-mono text-white tracking-tight">--</div>
+                        <span id="rank-${tierId}-${def.id}" class="text-[10px] font-mono text-zinc-500 block mt-1">Scale: ${def.max}</span>
+                    </div>
+                    <div id="badge-${tierId}-${def.id}" class="text-[11px] font-medium px-2.5 py-1 rounded border bg-zinc-800 text-zinc-400 border-zinc-700 truncate">Level: --</div>
+                </div>
+                <div class="space-y-3 pointer-events-auto" onclick="event.stopPropagation()">
+                    <div class="flex items-center gap-2.5">
+                        <input type="range" id="slider-${tierId}-${def.id}" min="0" max="${def.max}" step="1" value="0" oninput="handleInput('${tierId}', '${def.id}', 'slider')" class="w-full">
+                        <input type="number" id="num-${tierId}-${def.id}" min="0" max="${def.max}" step="1" placeholder="--" oninput="handleInput('${tierId}', '${def.id}', 'num')" class="w-16 text-right text-sm font-bold font-mono bg-base border border-line rounded px-2 py-1 text-white focus:outline-none focus:border-brand">
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function initDOM() {
+            ['t1', 't2', 't3'].forEach(tier => {
+                document.getElementById(`grid-${tier}`).innerHTML = TEST_DEFS[tier].map(d => buildCardHtml(tier, d)).join('');
+                document.getElementById(`profile-${tier}`).innerHTML = profileHtml(tier);
+            });
+        }
+
+        function switchView(viewId) {
+            STATE.view = viewId;
+            ['home', 't1', 't2', 't3'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hide');
+                const nav = document.getElementById(`nav-${v}`);
+                nav.className = "nav-btn px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors text-zinc-400 hover:text-white hover:bg-card";
+            });
+            const view = document.getElementById(`view-${viewId}`);
+            view.classList.remove('hide');
+            view.classList.add('animate-in');
+            const active = document.getElementById(`nav-${viewId}`);
+            active.className = "nav-btn px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors bg-brand text-white shadow-sm";
+            if (viewId !== 'home') updateTierUI(viewId);
+        }
+
+        function handleInput(tierId, testId, source) {
+            STATE.forced = false;
+            const num = document.getElementById(`num-${tierId}-${testId}`);
+            const slider = document.getElementById(`slider-${tierId}-${testId}`);
+            let val = source === 'num' ? num.value : slider.value;
+            if (source === 'num') slider.value = val === '' ? 0 : val;
+            else num.value = val;
+            if (val === '') delete STATE.inputs[tierId][testId];
+            else STATE.inputs[tierId][testId] = parseFloat(val);
+            computeEngine(tierId);
+        }
+
+        function forceUci(tierId) {
+            const parsed = parseFloat(document.getElementById(`uci-input-${tierId}`).value);
+            if (isNaN(parsed)) return;
+            STATE.globalUci = parsed;
+            STATE.forced = true;
+            STATE.inputs[tierId] = {};
+            TEST_DEFS[tierId].forEach(d => {
+                document.getElementById(`num-${tierId}-${d.id}`).value = '';
+                document.getElementById(`slider-${tierId}-${d.id}`).value = 0;
+            });
+            updateTierUI(tierId);
+        }
+
+        function computeEngine(tierId) {
+            if (STATE.forced) return;
+            const vals = Object.entries(STATE.inputs[tierId]).map(([testId, score]) => {
+                const def = TEST_DEFS[tierId].find(d => d.id === testId);
+                return scoreToUci(def.mapKey, score);
+            });
+            if (vals.length === 0) { STATE.globalUci = 0; updateTierUI(tierId); return; }
+
+            // Proven ceiling = best single result. Secondary results nudge it up a little
+            // (consistency across contests implies your true ceiling sits slightly above your single best),
+            // but never pull it down.
+            const maxUci = Math.max(...vals);
+            const others = vals.filter(v => v < maxUci);
+            const nudge = others.length ? 0.1 * (others.reduce((a, b) => a + b, 0) / others.length) : 0;
+            STATE.globalUci = Math.min(115, maxUci + nudge);
+            updateTierUI(tierId);
+        }
+
+        function updateTierUI(tierId) {
+            const uciInput = document.getElementById(`uci-input-${tierId}`);
+            if (document.activeElement !== uciInput) uciInput.value = STATE.globalUci.toFixed(1);
+
+            TEST_DEFS[tierId].forEach(def => {
+                const scoreElem = document.getElementById(`score-${tierId}-${def.id}`);
+                const tagElem = document.getElementById(`tag-${tierId}-${def.id}`);
+                const rankElem = document.getElementById(`rank-${tierId}-${def.id}`);
+                const badgeElem = document.getElementById(`badge-${tierId}-${def.id}`);
+                const entered = STATE.inputs[tierId][def.id];
+
+                if (entered !== undefined) {
+                    scoreElem.innerText = entered;
+                    tagElem.innerText = "Entered";
+                    tagElem.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-brand/20 text-brand border border-brand/40 font-semibold";
+                    rankElem.innerText = getRank(scoreToUci(def.mapKey, entered));
+                    const b = getTestBadge(def.mapKey, entered, false);
+                    badgeElem.innerText = b.text;
+                    badgeElem.className = `text-[11px] font-medium px-2.5 py-1 rounded border ${BADGE_CLASS[b.cls]} truncate`;
+                } else {
+                    let valid = true;
+                    if (def.reqUci && STATE.globalUci < def.reqUci) valid = false;
+                    if (!valid) {
+                        scoreElem.innerText = "0 – 0";
+                        tagElem.innerText = "Locked";
+                        tagElem.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-base text-zinc-500 border border-line";
+                        rankElem.innerText = `Requires UCI ≥ ${def.reqUci}`;
+                        const b = getTestBadge(def.mapKey, 0, true);
+                        badgeElem.innerText = b.text;
+                        badgeElem.className = `text-[11px] font-medium px-2.5 py-1 rounded border ${BADGE_CLASS[b.cls]} truncate`;
+                    } else if (STATE.globalUci === 0 && !STATE.forced) {
+                        scoreElem.innerText = "--";
+                        tagElem.innerText = "Pending";
+                        tagElem.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-line2 text-zinc-400 border border-line";
+                        rankElem.innerText = `Scale: ${def.max}`;
+                        badgeElem.innerText = "Awaiting input";
+                        badgeElem.className = "text-[11px] font-medium px-2.5 py-1 rounded border bg-zinc-800 text-zinc-400 border-zinc-700 truncate";
+                    } else {
+                        const predMid = uciToScore(def.mapKey, STATE.globalUci);
+                        scoreElem.innerText = formatRange(predMid, def.max);
+                        tagElem.innerText = "Predicted";
+                        tagElem.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-cyan/10 text-cyan border border-cyan/30";
+                        rankElem.innerText = getRank(STATE.globalUci);
+                        const b = getTestBadge(def.mapKey, predMid, false);
+                        badgeElem.innerText = b.text;
+                        badgeElem.className = `text-[11px] font-medium px-2.5 py-1 rounded border ${BADGE_CLASS[b.cls]} truncate`;
+                    }
+                }
+            });
+            updateProfile(tierId);
+        }
+
+        function updateProfile(tierId) {
+            const uci = STATE.globalUci;
+            const idxEl = document.getElementById(`profile-index-${tierId}`);
+            const bar = document.getElementById(`profile-bar-${tierId}`);
+            const rankEl = document.getElementById(`profile-rank-${tierId}`);
+            const noteEl = document.getElementById(`profile-note-${tierId}`);
+            const labelEl = document.getElementById(`profile-label-${tierId}`);
+
+            if (uci <= 0 && !STATE.forced) {
+                idxEl.innerText = '--'; bar.style.width = '0%';
+                rankEl.innerText = 'Awaiting input'; noteEl.innerText = '';
+                labelEl.innerText = tierId === 't1' ? 'Floor UCI' : 'Global UCI';
+                return;
+            }
+            idxEl.innerText = uci.toFixed(1);
+            bar.style.width = Math.min(100, (uci / 115) * 100) + '%';
+            rankEl.innerText = getRank(uci);
+            labelEl.innerText = tierId === 't1' ? 'Floor UCI' : 'Global UCI';
+            noteEl.innerText = tierId === 't1'
+                ? '⚠ T1 is foundational — this is a floor, not your ceiling. Higher-tier results may rate you far above.'
+                : '';
+        }
+
+        function copyUci(tierId) {
+            const val = STATE.globalUci.toFixed(1);
+            const btn = document.getElementById(`btn-copy-${tierId}`);
+            const done = () => btnText(btn, 'Copied!');
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(val).then(done).catch(() => fallbackCopy(val, done));
+            } else fallbackCopy(val, done);
+        }
+        function fallbackCopy(val, cb) {
+            const ta = document.getElementById('clipboard-fallback');
+            ta.value = val; ta.select();
+            try { document.execCommand('copy'); cb(); } catch (e) { btnText(document.getElementById('btn-copy-t1'), 'Failed'); }
+        }
+        function btnText(btn, text) {
+            const orig = btn.innerText;
+            btn.innerText = text;
+            btn.classList.replace('text-zinc-300', 'text-white');
+            setTimeout(() => { btn.innerText = orig; btn.classList.replace('text-white', 'text-zinc-300'); }, 1500);
+        }
+
+        function clearTier(tierId) {
+            STATE.inputs[tierId] = {};
+            STATE.globalUci = 0;
+            STATE.forced = false;
+            TEST_DEFS[tierId].forEach(d => {
+                document.getElementById(`num-${tierId}-${d.id}`).value = '';
+                document.getElementById(`slider-${tierId}-${d.id}`).value = 0;
+            });
+            updateTierUI(tierId);
+        }
+
+        function openModal(tierId, testId) {
+            const def = TEST_DEFS[tierId].find(d => d.id === testId);
+            const entered = STATE.inputs[tierId][testId];
+            let activeScore = 0, activeUci = 0, locked = false, isUser = false;
+
+            if (entered !== undefined) {
+                activeScore = entered;
+                activeUci = scoreToUci(def.mapKey, activeScore);
+                isUser = true;
+            } else {
+                if (def.reqUci && STATE.globalUci < def.reqUci) locked = true;
+                else if (STATE.globalUci > 0 || STATE.forced) {
+                    activeScore = uciToScore(def.mapKey, STATE.globalUci);
+                    activeUci = STATE.globalUci;
+                }
+            }
+
+            const badge = getTestBadge(def.mapKey, activeScore, locked);
+            document.getElementById('modal-title').innerText = `${def.name} Analysis`;
+            document.getElementById('modal-status').innerText = isUser ? 'Verified Input' : (locked ? 'Locked' : 'Derived Prediction');
+            document.getElementById('modal-score').innerText = locked ? 'Locked' : (isUser ? activeScore.toFixed(1) : formatRange(activeScore, def.max));
+            document.getElementById('modal-award').innerText = badge.text;
+            document.getElementById('modal-pct').innerText = badge.pct;
+
+            const pct = locked ? 0 : Math.min(100, Math.max(0, (activeScore / def.max) * 100));
+            document.getElementById('spect-marker').style.left = pct + '%';
+            document.getElementById('spect-bounds').innerText = `0 – ${def.max}`;
+            document.getElementById('spect-mid').innerText = def.max / 2;
+            document.getElementById('spect-max').innerText = def.max;
+
+            renderChart(def, activeScore, locked);
+            document.getElementById('spect-projections').innerHTML = generateProjections(tierId, def, activeScore, activeUci, badge, isUser, locked);
+
+            const modal = document.getElementById('modal-spectrum');
+            const container = document.getElementById('modal-container');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            container.classList.remove('scale-95');
+            container.classList.add('scale-100');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal-spectrum');
+            const container = document.getElementById('modal-container');
+            container.classList.remove('scale-100');
+            container.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function generateProjections(tierId, def, score, uci, badge, isUser, locked) {
+            if (locked) return `<strong>Locked.</strong> This prediction sits below the required threshold (UCI ≥ ${def.reqUci}). Enter a qualifying score to unlock it.`;
+            const who = isUser ? 'Direct verified score.' : 'Derived from your Global Index.';
+            const ceiling = tierId === 't1' ? ' Note: T1 is a floor — higher tiers reveal your true ceiling.' : '';
+            return `<strong>${def.name} — ${badge.text} (${badge.pct}).</strong> ${who} This places you at <strong>${getRank(uci)}</strong>.${ceiling}`;
+        }
+
+        function renderChart(def, score, locked) {
+            const ctx = document.getElementById('chart-spectrum').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            let labels = [...def.bLabels];
+            let data = [...def.bMarks];
+            let bg = labels.map(() => '#3a3a44');
+
+            if (!locked) {
+                labels.push('Candidate');
+                data.push(score);
+                bg.push('#22d3ee');
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets: [{ data, backgroundColor: bg, borderRadius: 4, borderWidth: 0 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#a1a1aa', font: { family: 'JetBrains Mono', size: 10 } } },
+                        y: { grid: { color: '#2e2e35' }, ticks: { color: '#a1a1aa', font: { family: 'JetBrains Mono', size: 10 } }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        window.onload = () => { initDOM(); switchView('home'); };
+    </script>
+</body>
+</html>
